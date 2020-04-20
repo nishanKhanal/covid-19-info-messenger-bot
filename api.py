@@ -23,7 +23,6 @@ def covid_update(country="all"):
     if api_response not in ['', ' ']:
         #if this api is working then
         response = api_response.json() if country == 'all' else api_response.json()['latest_stat_by_country'][0]
-        pprint.pprint(response)
         data = {}
         data['country_name'] = 'Global' if country == 'all' else response['country_name']
         try:
@@ -100,7 +99,6 @@ def covid_update(country="all"):
     last_updated_NST = last_updated_UTC.astimezone(timezone('Asia/Kathmandu'))
     current_time_UTC = datetime.now(tz.utc)
     formatted_time = last_updated_NST.strftime('%d %b,%Y %H:%M:%S ')
-    print(formatted_time)
     delta = current_time_UTC - last_updated_UTC
 
     if delta.seconds >= 60:
