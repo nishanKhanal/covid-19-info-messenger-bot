@@ -1,6 +1,6 @@
 from flask import Flask, request
-import requests, json, os
-from api import covid_update
+import requests, json, os, random
+from api import covid_update, AFFECTED_COUNTRIES
 
 app = Flask(__name__)
 
@@ -17,7 +17,6 @@ def receive_message():
         """Before allowing people to message your bot, Facebook has implemented a verify token
         that confirms all requests that your bot receives came from Facebook.""" 
         token_sent = request.args.get("hub.verify_token")
-        print("something")
         if token_sent == VERIFY_TOKEN:
             return request.args.get("hub.challenge")
         return 'Invalid verification token'
@@ -35,90 +34,215 @@ def receive_message():
                 # Get user info from sender_psid
                 res = requests.get(f"https://graph.facebook.com/{sender_psid}?fields=first_name,last_name,profile_pic&access_token={ACCESS_TOKEN}")
                 profile_info = res.json()
-                print(profile_info)
+
 
                 if 'message' in webhook_event:
                     set_sender_status(sender_psid=sender_psid,action='typing_on')
                     handle_message(sender_psid, webhook_event['message'],profile_info=profile_info)
                 elif 'postback' in webhook_event:
                     set_sender_status(sender_psid=sender_psid,action='typing_on')
-                    handle_postback(sender_psid, webhook_event['postback'])
+                    handle_postback(sender_psid, webhook_event['postback'],profile_info)
 
 
             return 'event received'
         else:
             return '404 not found'
-        # pprint.pprint(output)
-        # print(len(output['entry']))
-        # for event in output['entry']:
-        #     messaging = event['messaging']
 
         return "Message Processed"
 
 
 def handle_message(sender_psid, received_message, profile_info):
     response = {}
-    if 'text' in received_message:
-        
-        if 'nlp' in received_message:
+
+    if 'quick_reply' in received_message:
+        handle_postback(sender_psid, received_message['quick_reply'],profile_info)
+
+    elif 'text' in received_message:
+        if received_message['text'].lower() in AFFECTED_COUNTRIES:
+            response = {
+                "attachment":{
+                "type":"template",
+                "payload":{
+                    "template_type":"button",
+                    "text":covid_update(received_message['text'].lower()),
+                    "buttons":[
+                    {
+                        "type":"web_url",
+                        "url":"https://www.worldometers.info/coronavirus/",
+                        "title":"Get More Info"
+                    },
+                    ]
+                }
+                }
+            }
+        elif 'nlp' in received_message:
             nlp = received_message['nlp']
             if 'entities' in nlp:
                 entities = nlp['entities']
-                if 'greetings' in entities:
-                    if entities['greetings'][0]['confidence'] > 0.7:
-                        response = {
-                            "text": f"{received_message['text']} {profile_info['first_name']}. Try one of the options in the menu."
-                        }
-                    else:
-                        response = {
-                            "text": f"Hello {profile_info['first_name']}. Try one of the options in the menu."
-                        }
-                else:
+                if ('greetings' in entities) and (entities['greetings'][0]['confidence'] > 0.7):
+                    choice_hello = ['Hi!', 'Hello!', 'Hola!', 'Hey!']
+                    response_greeting = random.choice(choice_hello)
                     response = {
-                        "text": f"Sorry I can't understand what you're saying! Try one of the options in the menu."
+                        "text": f"{response_greeting} {profile_info['first_name']}."
                     }
-        print(response)
+                else:
+                    exception_texts = [
+                        "Sorry, I don't quite understand that!",
+                        "I can’t make head nor tail of what you’re saying.",
+                        "Sorry this is as clear as mud to me.",
+                        "To have no clue of what you are saying.",
+                        "It's beyond my understanding what you're saying"
+                    ]
+                    response = {
+                        "text": random.choice(exception_texts) 
+                    }
+
+                call_send_api(sender_psid, response)
+                set_sender_status(sender_psid, 'typing_on')
+                response ={
+                    "text": "Try one of the options in the menu."
+                }
+                call_send_api(sender_psid, response)
+                set_sender_status(sender_psid, 'typing_on')
+                response ={
+                    "text": "or Get Updates:",
+                    "quick_replies":[
+                    {
+                        "content_type":"text",
+                        "title":"Global Update",
+                        "payload":"total_global_cases",
+                        "image_url":"https://i.ibb.co/smC141c/earth-PNG5.png"
+                    },{
+                        "content_type":"text",
+                        "title":"Nepal Update",
+                        "payload":"total_nepal_cases",
+                        "image_url":"https://i.ibb.co/F0Vk56C/flag-of-nepal-national-flag-national-symbols-of-nepal-flag-png-clip-art.png"
+                    },
+                    {
+                        "content_type":"text",
+                        "title":"USA",
+                        "payload":"usa",
+                        "image_url":"https://i.ibb.co/XFJZDjY/78-786836-icon-svg-american-us-flag-image-usa-flag.png"
+                    },
+                    {
+                        "content_type":"text",
+                        "title":"Other Countries",
+                        "payload":"other_countries",
+                        "image_url":"https://i.ibb.co/bP289TY/computer-icons-internet-world-wide-web-clip-art-wh.png"
+                    }
+                    ]
+                }
 
     elif 'attachments' in received_message:
         attachment_url = received_message['attachments'][0]['payload']['url']
+        complementing_words = ['Nice', 'Super','Fantastic', 'HaHaHa','Nice one','Whoa!', 'Good one', 'Noicee', 'Noicee','Noicee', 'Lovely']
         response = {
-            "attachment": {
-                "type": "template",
-                "payload": {
-                "template_type": "generic",
-                "elements": [{
-                    "title": "Is this the right picture?",
-                    "subtitle": "Tap a button to answer.",
-                    "image_url": attachment_url,
-                    "buttons": [
-                    {
-                        "type": "postback",
-                        "title": "Yes!",
-                        "payload": "yes",
-                    },
-                    {
-                        "type": "postback",
-                        "title": "No!",
-                        "payload": "no",
-                    }
-                    ],
-                }]
-                }
-            }
+            "text": random.choice(complementing_words)
         }
+        # response = {
+        #     "attachment": {
+        #         "type": "template",
+        #         "payload": {
+        #         "template_type": "generic",
+        #         "elements": [{
+        #             "title": "Is this the right picture?",
+        #             "subtitle": "Tap a button to answer.",
+        #             "image_url": attachment_url,
+        #             "buttons": [
+        #             {
+        #                 "type": "postback",
+        #                 "title": "Yes!",
+        #                 "payload": "yes",
+        #             },
+        #             {
+        #                 "type": "postback",
+        #                 "title": "No!",
+        #                 "payload": "no",
+        #             }
+        #             ],
+        #         }]
+        #         }
+        #     }
+        # }
     call_send_api(sender_psid, response)
 
-def handle_postback(sender_psid, received_message):
+def handle_postback(sender_psid, received_message, profile_info):
     # print(received_message)
     payload = received_message['payload']
 
     # If get started is called
     if(payload == "greeting"):
-        response = { "text": "No greeting!" }
-    if(payload == 'yes'):
-        response = { "text": "Thanks!" }
-    elif(payload == 'no'):
-        response = { "text": "Oops, try sending another image." }
+        response = { 
+            "text":  f"Hello! {profile_info['first_name']}, Are you staying at home?",
+            "quick_replies":[
+            {
+                "content_type":"text",
+                "title":"Yeah! ",
+                "payload":"yeah_staying_home",
+                "image_url":"https://smallimg.pngkey.com/png/small/0-4418_image-checkmark-green-circle-check-mark.png"
+            },{
+                "content_type":"text",
+                "title":"Nope! ",
+                "payload":"not_staying_home",
+                "image_url":"https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Cross_red_circle.svg/600px-Cross_red_circle.svg.png"
+            }
+            ]
+        }   
+    # if(payload == 'yes'):
+    #     response = { "text": "Thanks!" }
+     # elif(payload == 'no'):
+    #     response = { "text": "Oops, try sending another image." }
+    elif(payload == 'yeah_staying_home'):
+        response = { "text": "That's good! You are keeping yourself as well as others safe." }
+        call_send_api(sender_psid,response)
+        set_sender_status(sender_psid,'typing_on')
+        response ={
+            "text": "Would you like some updates?",
+            "quick_replies":[
+            {
+                "content_type":"text",
+                "title":"Global Update",
+                "payload":"total_global_cases",
+                "image_url":"https://i.ibb.co/smC141c/earth-PNG5.png"
+            },{
+                "content_type":"text",
+                "title":"Nepal Update",
+                "payload":"total_nepal_cases",
+                "image_url":"https://i.ibb.co/F0Vk56C/flag-of-nepal-national-flag-national-symbols-of-nepal-flag-png-clip-art.png"
+            },
+            {
+                "content_type":"text",
+                "title":"USA",
+                "payload":"usa",
+                "image_url":"https://i.ibb.co/XFJZDjY/78-786836-icon-svg-american-us-flag-image-usa-flag.png"
+            },
+            {
+                "content_type":"text",
+                "title":"Other Countries",
+                "payload":"other_countries",
+                "image_url":"https://i.ibb.co/bP289TY/computer-icons-internet-world-wide-web-clip-art-wh.png"
+            }
+            ]
+        }
+    elif(payload == 'not_staying_home'):
+        response = { "text": "Whoa! PLEASE help to flatten the curve by staying home."}
+        call_send_api(sender_psid,response)
+        set_sender_status(sender_psid,'typing_on')
+        response ={
+            "text": "Learn More on:",
+            "quick_replies":[
+            {
+                "content_type":"text",
+                "title":"Preventive Measures",
+                "payload":"preventive_measures",
+            },{
+                "content_type":"text",
+                "title":"Compare with flu",
+                "payload":"compare_symptoms_with_flu",
+            }
+            ]
+        }
+   
     elif(payload == 'about_covid_19'):
         response = {
             "attachment":{
@@ -201,14 +325,59 @@ def handle_postback(sender_psid, received_message):
         }
     elif(payload == "total_global_cases"):
         response = {
-            "text" : covid_update('all')
+            "attachment":{
+            "type":"template",
+            "payload":{
+                "template_type":"button",
+                "text":covid_update('all'),
+                "buttons":[
+                {
+                    "type":"web_url",
+                    "url":"https://www.worldometers.info/coronavirus/",
+                    "title":"Get More Info"
+                },
+                ]
+            }
+            }
         }
     elif(payload == "total_nepal_cases"):
         response = {
-            "text" : covid_update('nepal')
+            "attachment":{
+            "type":"template",
+            "payload":{
+                "template_type":"button",
+                "text":covid_update('nepal'),
+                "buttons":[
+                {
+                    "type":"web_url",
+                    "url":"https://covid19.mohp.gov.np/#/",
+                    "title":"Get More Info"
+                },
+                ]
+            }
+            }
         }
-    
-    
+    elif(payload == "usa"):
+        response = {
+            "attachment":{
+            "type":"template",
+            "payload":{
+                "template_type":"button",
+                "text":covid_update('usa'),
+                "buttons":[
+                {
+                    "type":"web_url",
+                    "url":"https://www.worldometers.info/coronavirus/",
+                    "title":"Get More Info"
+                },
+                ]
+            }
+            }
+        }
+    elif(payload == 'other_countries'):
+        response ={
+            "text": "The affected countries/regions are: \n" + '\n'.join(AFFECTED_COUNTRIES).replace('caribbean netherlands','china')[:1916] + "\nTry typing one of the countries."
+        }
         
     call_send_api(sender_psid, response)
 
@@ -230,6 +399,7 @@ def set_sender_status(sender_psid,action):
         "sender_action": action
     }
     response = requests.post(URL,headers=headers,data=json.dumps(data))
+    return response
 
 
 if __name__ == "__main__":

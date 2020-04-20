@@ -2,6 +2,11 @@ import requests, os
 from datetime import datetime, timezone as tz
 from pytz import timezone
 
+temp = ["USA","Spain","Italy","France","Germany","UK","Turkey","Iran","Russia","Belgium","Brazil","Canada","Netherlands","Switzerland","Portugal","India","Peru","Ireland","Austria","Sweden","Israel","Japan","S. Korea","Saudi Arabia","Chile","Ecuador","Poland","Romania","Pakistan","Mexico","Singapore","Denmark","UAE","Norway","Czechia","Indonesia","Serbia","Australia","Philippines","Qatar","Ukraine","Malaysia","Belarus","Dominican Republic","Panama","Finland","Colombia","Luxembourg","South Africa","Egypt","Morocco","Bangladesh","Argentina","Thailand","Algeria","Moldova","Greece","Kuwait","Hungary","Bahrain","Croatia","Kazakhstan","Iceland","Uzbekistan","Iraq","Estonia","New Zealand","Oman","Azerbaijan","Armenia","Slovenia","Lithuania","Bosnia and Herzegovina","North Macedonia","Slovakia","Ghana","Cuba","Afghanistan","Hong Kong","Cameroon","Bulgaria","Tunisia","Ivory Coast","Djibouti","Cyprus","Latvia","Andorra","Diamond Princess","Lebanon","Costa Rica","Niger","Nigeria","Albania","Guinea","Burkina Faso","Kyrgyzstan","Bolivia","Uruguay","Channel Islands","Honduras","San Marino","Palestine","Malta","Taiwan","Jordan","Réunion","Georgia","Senegal","Mauritius","DRC","Montenegro","Sri Lanka","Isle of Man","Guatemala","Kenya","Mayotte","Vietnam","Venezuela","Mali","El Salvador","Paraguay","Jamaica","Faeroe Islands","Tanzania","Somalia","Martinique","Congo","Guadeloupe","Rwanda","Brunei","Gibraltar","Cambodia","Madagascar","Trinidad and Tobago","Myanmar","Ethiopia","Gabon","Aruba","French Guiana","Monaco","Sudan","Liberia","Bermuda","Togo","Liechtenstein","Equatorial Guinea","Barbados","Sint Maarten","Cabo Verde","Maldives","Guyana","Zambia","Cayman Islands","Bahamas","French Polynesia","Uganda","Benin","Libya","Guinea-Bissau","Haiti","Macao","Sierra Leone","Syria","Eritrea","Mozambique","Saint Martin","Chad","Mongolia","Nepal","Zimbabwe","Angola","Antigua and Barbuda","Eswatini","Timor-Leste","Botswana","Laos","Belize","Fiji","New Caledonia","Malawi","Dominica","Namibia","Saint Kitts and Nevis","Saint Lucia","Curaçao","Grenada","CAR","St. Vincent Grenadines","Turks and Caicos","Falkland Islands","Greenland","Montserrat","Seychelles","Nicaragua","Gambia","Suriname","MS Zaandam","Vatican City","Mauritania","Papua New Guinea","St. Barth","Western Sahara","British Virgin Islands","Burundi","Bhutan","Caribbean Netherlands","Sao Tome and Principe","South Sudan","Anguilla","Saint Pierre Miquelon","Yemen","China"]
+AFFECTED_COUNTRIES=[]
+for country in temp:
+    AFFECTED_COUNTRIES.append(country.lower())
+
 def covid_update(country="all"):
     # use all for world and country name for specific country data
 
@@ -103,7 +108,7 @@ def covid_update(country="all"):
 
     if delta.seconds >= 60:
         minutes = delta.seconds // 60
-        time_ago = f"{minutes} minutes ago" if minutes>1 else f"{minutes} minutes ago"
+        time_ago = f"{minutes} minutes ago" if minutes>1 else f"{minutes} minute ago"
     else:
         seconds = delta.seconds
         time_ago = f"{seconds} seconds ago" if seconds>1 else f"{seconds} second ago"

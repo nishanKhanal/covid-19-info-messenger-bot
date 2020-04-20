@@ -1,6 +1,5 @@
-import requests, json
-
-ACCESS_TOKEN ="EAADN3saaUZC8BAHRzadX7ygVr2KerNP4AMn4xDDkA6SEYp2dnD5SwpAszsMWLHA87lK0U3ZBTZCtUczama2JZCTuhw9pAKAZCZCFZCqmYQfAQ4vHqoHYcso5iEFwze8w31ycEmuaC45FuBrJcGVptuYnM4aQqbHC2IX71BuTitVDAZDZD"
+import requests, json, os
+ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
 URL_MESSENGER_PROFILE = f"https://graph.facebook.com/v2.6/me/messenger_profile?access_token={ACCESS_TOKEN}"
 
 #Includes Get Started
@@ -13,11 +12,8 @@ data = {
     "greeting": [
         {
             "locale":"default",
-            "text":"Hello! {{user_first_name}}" 
-        }, {
-            "locale":"en_US",
-            "text":"Timeless apparel for the masses."
-        }
+            "text":"Hello! {{user_first_name}}. This bot provides information on coronavirus. Get started to learn more about the disease. \n Compare this disease with seasonal flu and common cold. It uses the CDC, WHO and public data by Johns Hopkins CSSE as source of data and information" 
+        }, 
     ]
 }
 response = requests.post(URL_MESSENGER_PROFILE, headers=headers, data=json.dumps(data))
@@ -63,6 +59,11 @@ data = {
                     "title":"Nepal Update",
                     "type":"postback",
                     "payload":"total_nepal_cases"
+                },
+                {
+                    "title":"Other Countries",
+                    "type":"postback",
+                    "payload":"other_countries"
                 }
                 ]
             },
@@ -93,5 +94,4 @@ data = {
     }
 
 response = requests.post(URL_MESSENGER_PROFILE, headers=headers, data=json.dumps(data))
-
-
+print(response.text)
