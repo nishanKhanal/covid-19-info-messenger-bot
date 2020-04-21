@@ -17,15 +17,15 @@ def covid_update(country="all"):
     }
 
     api_response = ''
-    if country == "all":        
-        url = "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php"
-        api_response = requests.request("GET", url, headers=headers)
-    else:
-        url = "https://coronavirus-monitor.p.rapidapi.com/coronavirus/latest_stat_by_country.php"
-        querystring = {"country":country}
-        api_response = requests.request("GET", url, headers=headers, params=querystring)
-  
-    if api_response not in ['', ' ']:
+    try:
+        if country == "all":        
+            url = "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php"
+            api_response = requests.request("GET", url, headers=headers, timeout=5)
+        else:
+            url = "https://coronavirus-monitor.p.rapidapi.com/coronavirus/latest_stat_by_country.php"
+            querystring = {"country":country}
+            api_response = requests.request("GET", url, headers=headers, params=querystring, timeout=5)
+        print("First api is running")
         #if this api is working then
         response = api_response.json() if country == 'all' else api_response.json()['latest_stat_by_country'][0]
         data = {}
@@ -62,8 +62,9 @@ def covid_update(country="all"):
             pass
         last_updated_UTC = datetime.fromisoformat(get_unformated_time.replace(' ','T')+"+00:00")
 
-    else:
-    #2nd Api that updates every 15 minutes
+    except requests.exceptions.Timeout:
+        #2nd Api that updates every 15 minutes
+        print('second api is running')
         url = "https://covid-193.p.rapidapi.com/statistics"
 
         querystring = {"country":country}
