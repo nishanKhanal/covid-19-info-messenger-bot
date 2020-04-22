@@ -59,21 +59,12 @@ def handle_message(sender_psid, received_message, profile_info):
 
     elif 'text' in received_message:
         if received_message['text'].lower() in AFFECTED_COUNTRIES:
+            response = get_covid_update(received_message['text'].lower())
+
+        elif received_message['text'].lower() in ['thanks','thanku','thank you','dhanyabd','tq','thank u']:
+            welcome_texts = ['Welcome!', "You're Welcom!", "You're welcome! It means a lot."]
             response = {
-                "attachment":{
-                "type":"template",
-                "payload":{
-                    "template_type":"button",
-                    "text":covid_update(received_message['text'].lower()),
-                    "buttons":[
-                    {
-                        "type":"web_url",
-                        "url":"https://www.worldometers.info/coronavirus/",
-                        "title":"Get More Info"
-                    },
-                    ]
-                }
-                }
+                "text": random.choice(welcome_texts)
             }
         elif 'nlp' in received_message:
             nlp = received_message['nlp']
@@ -88,10 +79,10 @@ def handle_message(sender_psid, received_message, profile_info):
                 else:
                     exception_texts = [
                         "Sorry, I don't quite understand that!",
-                        "I can’t make head nor tail of what you’re saying.",
+                        "I can’t make head nor tail of what you’re saying. Sorry for the inconvenience",
                         "Sorry this is as clear as mud to me.",
-                        "To have no clue of what you are saying.",
-                        "It's beyond my understanding what you're saying"
+                        "Sorry, have no clue of what you are saying.",
+                        "It's beyond my understanding what you're saying. I apologize"
                     ]
                     response = {
                         "text": random.choice(exception_texts) 
@@ -324,56 +315,11 @@ def handle_postback(sender_psid, received_message, profile_info):
             }
         }
     elif(payload == "total_global_cases"):
-        response = {
-            "attachment":{
-            "type":"template",
-            "payload":{
-                "template_type":"button",
-                "text":covid_update('all'),
-                "buttons":[
-                {
-                    "type":"web_url",
-                    "url":"https://www.worldometers.info/coronavirus/",
-                    "title":"Get More Info"
-                },
-                ]
-            }
-            }
-        }
+        response = get_covid_update('all')
     elif(payload == "total_nepal_cases"):
-        response = {
-            "attachment":{
-            "type":"template",
-            "payload":{
-                "template_type":"button",
-                "text":covid_update('nepal'),
-                "buttons":[
-                {
-                    "type":"web_url",
-                    "url":"https://covid19.mohp.gov.np/#/",
-                    "title":"Get More Info"
-                },
-                ]
-            }
-            }
-        }
+        response = get_covid_update('nepal')
     elif(payload == "usa"):
-        response = {
-            "attachment":{
-            "type":"template",
-            "payload":{
-                "template_type":"button",
-                "text":covid_update('usa'),
-                "buttons":[
-                {
-                    "type":"web_url",
-                    "url":"https://www.worldometers.info/coronavirus/",
-                    "title":"Get More Info"
-                },
-                ]
-            }
-            }
-        }
+        response = get_covid_update('usa')
     elif(payload == 'other_countries'):
         response ={
             "text": "The affected countries/regions are: \n" + '\n'.join(AFFECTED_COUNTRIES).replace('caribbean netherlands','china')[:1916] + "\nTry typing one of the countries."
@@ -399,6 +345,32 @@ def set_sender_status(sender_psid,action):
         "sender_action": action
     }
     response = requests.post(URL,headers=headers,data=json.dumps(data))
+    return response
+
+def get_covid_update(country):
+    try:
+        response ={
+            "attachment":{
+            "type":"template",
+            "payload":{
+                "template_type":"button",
+                "text":covid_update(country),
+                "buttons":[
+                {
+                    "type":"web_url",
+                    "url":"https://www.worldometers.info/coronavirus/",
+                    "title":"Get More Info"
+                },
+                ]
+            }
+            }
+        }
+    except Exception as e:
+        print("Exception from api:  ")
+        print(e)
+        response = {
+            "Sorry! We encountered some problem. We'll get back to you soon."
+        }
     return response
 
 

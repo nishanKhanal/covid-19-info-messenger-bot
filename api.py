@@ -10,14 +10,12 @@ for country in temp:
 def covid_update(country="all"):
     # use all for world and country name for specific country data
 
-    #header is same for both apis
-    headers = {
-        'x-rapidapi-host': "coronavirus-monitor.p.rapidapi.com",
-        'x-rapidapi-key': os.environ.get('X_RAPIDAPI_KEY')
-    }
-
     api_response = ''
     try:
+        headers = {
+            'x-rapidapi-host': "coronavirus-monitor.p.rapidapi.com",
+            'x-rapidapi-key': os.environ.get('X_RAPIDAPI_KEY')
+        }
         if country == "all":        
             url = "https://coronavirus-monitor.p.rapidapi.com/coronavirus/worldstat.php"
             api_response = requests.request("GET", url, headers=headers, timeout=5)
@@ -27,7 +25,13 @@ def covid_update(country="all"):
             api_response = requests.request("GET", url, headers=headers, params=querystring, timeout=5)
         print("First api is running")
         #if this api is working then
-        response = api_response.json() if country == 'all' else api_response.json()['latest_stat_by_country'][0]
+        try:
+            response = api_response.json() if country == 'all' else api_response.json()['latest_stat_by_country'][0][0]
+        except Exception as e:
+            print("Exception from first api: ")
+            print(e)
+            response = api_response.json() if country == 'all' else api_response.json()['latest_stat_by_country'][0]
+
         data = {}
         data['country_name'] = 'Global' if country == 'all' else response['country_name']
         try:
@@ -61,9 +65,14 @@ def covid_update(country="all"):
         except:
             pass
         last_updated_UTC = datetime.fromisoformat(get_unformated_time.replace(' ','T')+"+00:00")
+        print(last_updated_UTC)
 
     except requests.exceptions.Timeout:
         #2nd Api that updates every 15 minutes
+        headers = {
+            'x-rapidapi-host': "covid-193.p.rapidapi.com",
+            'x-rapidapi-key': "f39ce68748mshe5113d80b653704p17e6e8jsnec6ff57c14e1"
+        }
         print('second api is running')
         url = "https://covid-193.p.rapidapi.com/statistics"
 
@@ -113,5 +122,13 @@ def covid_update(country="all"):
     else:
         seconds = delta.seconds
         time_ago = f"{seconds} seconds ago" if seconds>1 else f"{seconds} second ago"
-    updated_data = f"{data['country_name']} UPDATE:\n\nTOTAL CONFIRMED CASES: {data['total_confirmed']:,}\n\nTOTAL DEATHS: {data['total_deaths']:,}\n\nTOTAL RECOVERED: {data['total_recovered']:,}\n\nNEW CASES: +{data['new_cases']:,}\n\nNEW DEATHS: +{data['new_deaths']:,}\n\nLAST UPDATED: {formatted_time} ({time_ago})"
+
+    if country == 'nepal':
+        total_tests_url = "https://covid19.mohp.gov.np/covid/api/confirmedcases"
+        total_tests_response = requests.get(total_tests_url)
+        samples_tested = int(total_tests_response.json()['nepal']['samples_tested'])
+        updated_data = f"{data['country_name']} UPDATE:\n\nTOTAL CONFIRMED CASES: {data['total_confirmed']:,}\n\nTOTAL DEATHS: {data['total_deaths']:,}\n\nTOTAL RECOVERED: {data['total_recovered']:,}\n\nNEW CASES: +{data['new_cases']:,}\n\nNEW DEATHS: +{data['new_deaths']:,}\n\nSAMPLES TESTED: {samples_tested:,}\n\nLAST UPDATED: {formatted_time} ({time_ago})"
+    else:
+        updated_data = f"{data['country_name']} UPDATE:\n\nTOTAL CONFIRMED CASES: {data['total_confirmed']:,}\n\nTOTAL DEATHS: {data['total_deaths']:,}\n\nTOTAL RECOVERED: {data['total_recovered']:,}\n\nNEW CASES: +{data['new_cases']:,}\n\nNEW DEATHS: +{data['new_deaths']:,}\n\nLAST UPDATED: {formatted_time} ({time_ago})"
     return updated_data
+
